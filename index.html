@@ -75,7 +75,7 @@
 
       .row {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr 1fr 1fr auto;
         gap: 12px;
       }
 
@@ -144,21 +144,45 @@
 
       <section class="panel">
         <h2>Endpoint</h2>
-        <div class="mono-line"><code>GET /api?year=2026</code></div>
+        <div class="mono-line">
+          <code>GET /api?year=2026&amp;holiday_type=is_lebaran&amp;is_national_holiday=true</code>
+        </div>
         <p><strong>Expect parameter:</strong></p>
         <ul>
           <li><code>year</code> (optional) - integer antara <code>1900</code> sampai <code>2100</code>.</li>
           <li>Jika <code>year</code> tidak dikirim / tidak valid, sistem memakai tahun saat ini.</li>
+          <li>
+            <code>holiday_type</code> (optional) - filter kategori libur.
+            Bisa 1 nilai atau banyak nilai dipisah koma.
+          </li>
+          <li>
+            <code>is_national_holiday</code> (optional) - filter boolean.
+            Nilai valid: <code>true</code>/<code>false</code> atau <code>1</code>/<code>0</code>.
+          </li>
         </ul>
+        <p>
+          Nilai yang didukung: <code>is_lebaran</code>, <code>is_holiday_muslim</code>,
+          <code>is_nationalism</code>, <code>is_holiday</code>, <code>is_cuti</code>, <code>other</code>.
+        </p>
+        <p>Jika <code>holiday_type</code> dan <code>is_national_holiday</code> dipakai bersamaan, filter akan digabung (AND).</p>
+        <p>
+          Cache API aktif <strong>7 hari</strong>. Setelah 7 hari, cache otomatis expired dan data akan diambil
+          ulang dari sumber.
+        </p>
+        <p>
+          Response juga menyertakan metadata <code>appliedFilters</code> dan <code>cacheTtlSeconds</code>.
+        </p>
       </section>
 
       <section class="panel">
         <h2>Cara Memanggil API</h2>
         <p><strong>cURL</strong></p>
-        <pre><code>curl "https://your-domain.vercel.app/api?year=2026"</code></pre>
+        <pre><code>curl "https://your-domain.vercel.app/api?year=2026&amp;holiday_type=is_lebaran&amp;is_national_holiday=true"</code></pre>
 
         <p><strong>JavaScript (fetch)</strong></p>
-        <pre><code>const response = await fetch("/api?year=2026");
+        <pre><code>const response = await fetch(
+  "/api?year=2026&amp;holiday_type=is_lebaran,is_holiday&amp;is_national_holiday=true"
+);
 const data = await response.json();
 console.log(data);</code></pre>
       </section>
@@ -167,6 +191,17 @@ console.log(data);</code></pre>
         <h2>Try API</h2>
         <div class="row">
           <input id="yearInput" class="field" type="number" min="1900" max="2100" value="2026" />
+          <input
+            id="typeInput"
+            class="field"
+            type="text"
+            placeholder="holiday_type (contoh: is_lebaran,is_holiday)"
+          />
+          <select id="nationalInput" class="field">
+            <option value="">is_national_holiday (semua)</option>
+            <option value="true">is_national_holiday=true</option>
+            <option value="false">is_national_holiday=false</option>
+          </select>
           <button id="runBtn" type="button">Ambil Data</button>
         </div>
         <pre id="resultBox"><code>Klik "Ambil Data" untuk melihat hasil JSON...</code></pre>
@@ -182,6 +217,11 @@ console.log(data);</code></pre>
     "tanggalan": "https://www.tanggalan.com/",
     "timeanddate": "https://www.timeanddate.com/holidays/indonesia/2026"
   },
+  "appliedFilters": {
+    "holiday_type": ["is_holiday"],
+    "is_national_holiday": true
+  },
+  "cacheTtlSeconds": 604800,
   "totalMonths": 8,
   "data": [
     {
@@ -190,7 +230,9 @@ console.log(data);</code></pre>
         {
           "tanggal": 1,
           "hari": "kamis",
-          "Libur": ["Tahun Baru 2026 Masehi"]
+          "Libur": ["Tahun Baru 2026 Masehi"],
+          "is_national_holiday": true,
+          "holiday_type": ["is_holiday"]
         }
       ]
     }
@@ -202,11 +244,19 @@ console.log(data);</code></pre>
     <script>
       const runBtn = document.getElementById("runBtn");
       const yearInput = document.getElementById("yearInput");
+      const typeInput = document.getElementById("typeInput");
+      const nationalInput = document.getElementById("nationalInput");
       const resultBox = document.getElementById("resultBox");
 
       async function runRequest() {
         const year = Number(yearInput.value);
-        const qs = Number.isInteger(year) ? `?year=${year}` : "";
+        const type = String(typeInput.value || "").trim();
+        const nationalHoliday = String(nationalInput.value || "").trim();
+        const params = new URLSearchParams();
+        if (Number.isInteger(year)) params.set("year", String(year));
+        if (type) params.set("holiday_type", type);
+        if (nationalHoliday) params.set("is_national_holiday", nationalHoliday);
+        const qs = params.toString() ? `?${params.toString()}` : "";
 
         resultBox.textContent = "Loading...";
         try {
