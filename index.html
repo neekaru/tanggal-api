@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tanggal API - Dokumentasi</title>
+    <style>
+      :root {
+        --bg-1: #f7f8ec;
+        --bg-2: #dfe8f2;
+        --card: #ffffff;
+        --ink: #1f2937;
+        --muted: #5c6675;
+        --line: #d7dce3;
+        --accent: #0f766e;
+        --accent-2: #0e7490;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at 10% 10%, #fef3c7 0, transparent 35%),
+          radial-gradient(circle at 90% 20%, #cdebf0 0, transparent 30%),
+          linear-gradient(130deg, var(--bg-1), var(--bg-2));
+        padding: 24px;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        display: grid;
+        gap: 16px;
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      }
+
+      h1,
+      h2 {
+        margin: 0 0 10px;
+        letter-spacing: 0.1px;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      code,
+      pre {
+        font-family: "JetBrains Mono", "Consolas", monospace;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        border: 1px solid #b5ddd9;
+        color: #115e59;
+        background: #ebfffd;
+        font-size: 12px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+      }
+
+      .field,
+      button {
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        padding: 10px 12px;
+        font-size: 14px;
+      }
+
+      .field {
+        width: 100%;
+      }
+
+      button {
+        cursor: pointer;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #fff;
+        border: 0;
+        transition: transform 0.12s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      pre {
+        white-space: pre-wrap;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        overflow: auto;
+      }
+
+      .mono-line {
+        padding: 10px 12px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        background: #f8fafc;
+        overflow-x: auto;
+      }
+
+      @media (max-width: 720px) {
+        body {
+          padding: 14px;
+        }
+
+        .row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <section class="panel">
+        <span class="badge">Tanggal API</span>
+        <h1>Dokumentasi API Libur Nasional Indonesia</h1>
+        <p>
+          API ini mengambil data libur dari tanggalan.com dan timeanddate.com, lalu mengembalikan hasil JSON
+          terstruktur per bulan.
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>Endpoint</h2>
+        <div class="mono-line"><code>GET /api?year=2026</code></div>
+        <p><strong>Expect parameter:</strong></p>
+        <ul>
+          <li><code>year</code> (optional) - integer antara <code>1900</code> sampai <code>2100</code>.</li>
+          <li>Jika <code>year</code> tidak dikirim / tidak valid, sistem memakai tahun saat ini.</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>Cara Memanggil API</h2>
+        <p><strong>cURL</strong></p>
+        <pre><code>curl "https://your-domain.vercel.app/api?year=2026"</code></pre>
+
+        <p><strong>JavaScript (fetch)</strong></p>
+        <pre><code>const response = await fetch("/api?year=2026");
+const data = await response.json();
+console.log(data);</code></pre>
+      </section>
+
+      <section class="panel">
+        <h2>Try API</h2>
+        <div class="row">
+          <input id="yearInput" class="field" type="number" min="1900" max="2100" value="2026" />
+          <button id="runBtn" type="button">Ambil Data</button>
+        </div>
+        <pre id="resultBox"><code>Klik "Ambil Data" untuk melihat hasil JSON...</code></pre>
+      </section>
+
+      <section class="panel">
+        <h2>Struktur Result JSON</h2>
+        <pre><code>{
+  "success": true,
+  "generatedAt": "2026-02-10T03:22:16.562Z",
+  "year": 2026,
+  "source": {
+    "tanggalan": "https://www.tanggalan.com/",
+    "timeanddate": "https://www.timeanddate.com/holidays/indonesia/2026"
+  },
+  "totalMonths": 8,
+  "data": [
+    {
+      "bulan": "JANUARI",
+      "data": [
+        {
+          "tanggal": 1,
+          "hari": "kamis",
+          "Libur": ["Tahun Baru 2026 Masehi"]
+        }
+      ]
+    }
+  ]
+}</code></pre>
+      </section>
+    </main>
+
+    <script>
+      const runBtn = document.getElementById("runBtn");
+      const yearInput = document.getElementById("yearInput");
+      const resultBox = document.getElementById("resultBox");
+
+      async function runRequest() {
+        const year = Number(yearInput.value);
+        const qs = Number.isInteger(year) ? `?year=${year}` : "";
+
+        resultBox.textContent = "Loading...";
+        try {
+          const response = await fetch(`/api${qs}`);
+          const data = await response.json();
+          resultBox.textContent = JSON.stringify(data, null, 2);
+        } catch (error) {
+          resultBox.textContent = JSON.stringify(
+            {
+              success: false,
+              message: error.message,
+            },
+            null,
+            2
+          );
+        }
+      }
+
+      runBtn.addEventListener("click", runRequest);
+    </script>
+  </body>
+</html>
