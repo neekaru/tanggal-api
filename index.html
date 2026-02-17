@@ -209,11 +209,12 @@ console.log(data);</code></pre>
       <h2>Struktur Result JSON</h2>
       <pre><code>{
   "success": true,
-  "generatedAt": "2026-02-17T11:05:55.789Z",
+  "generatedAt": "2026-02-17T11:51:29.381Z",
   "year": 2026,
   "source": {
-    "tanggalan": "https://www.tanggalan.com/",
-    "timeanddate": "https://www.timeanddate.com/holidays/indonesia/2026"
+    "kalenderku": "https://kalenderku.id/2026",
+    "timeanddate": "https://www.timeanddate.com/holidays/indonesia/2026",
+    "tanggalan": "https://tanggalan.com/2026"
   },
   "totalMonths": 8,
   "data": [
@@ -224,29 +225,34 @@ console.log(data);</code></pre>
           "tanggal": 1,
           "hari": "kamis",
           "Libur": [
-            "Tahun Baru Masehi"
+            "Tahun Baru 2026 Masehi"
           ],
           "is_national_holiday": true,
           "holiday_type": [
             "is_holiday"
           ],
-          "source": "timeanddate"
+          "source": "kalenderku"
         },
         {
           "tanggal": 16,
           "hari": "jumat",
           "Libur": [
-            "Isra Mikraj Nabi Muhammad"
+            "Isra Mikraj Nabi Muhammad SAW"
           ],
           "is_national_holiday": true,
           "holiday_type": [
             "is_holiday_muslim"
           ],
-          "source": "timeanddate"
+          "source": "kalenderku"
         }
       ]
     }
-  ]
+  ],
+  "appliedFilters": {
+    "holiday_type": [],
+    "is_national_holiday": null
+  },
+  "cacheTtlSeconds": 604800
 }</code></pre>
     </section>
   </main>
