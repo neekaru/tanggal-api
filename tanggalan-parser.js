@@ -1,5 +1,4 @@
 const cheerio = require("cheerio");
-const { categorizeHolidayList } = require("./holiday-categorizer");
 
 const DAY_NAMES = ["minggu", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
 
@@ -35,7 +34,7 @@ function getLocalHolidays($, monthEl) {
   return holidays;
 }
 
-function parseCalendar(html, timeAndDateMap = {}) {
+function parseCalendar(html) {
   const $ = cheerio.load(html);
   const result = [];
 
@@ -58,50 +57,24 @@ function parseCalendar(html, timeAndDateMap = {}) {
 
         const tanggal = Number($(node).text().trim());
         if (!Number.isNaN(tanggal)) {
-          const localHolidayNames = localHolidays[tanggal] || [];
-          const externalHolidayData =
-            (timeAndDateMap[monthName] && timeAndDateMap[monthName][tanggal]) || null;
-          const externalHolidayNames = (externalHolidayData ? externalHolidayData.holidays : []) || [];
-          const selectedHolidayNames =
-            localHolidayNames.length > 0 ? localHolidayNames : externalHolidayNames;
-          const selectedHolidayTypes = categorizeHolidayList(selectedHolidayNames);
-          const selectedIsNationalHoliday = selectedHolidayTypes.some((type) => type !== "other");
+          const holidayNames = localHolidays[tanggal] || [];
 
-          if (selectedHolidayNames.length > 0) {
+          if (holidayNames.length > 0) {
             dates.push({
               tanggal,
               hari: DAY_NAMES[index % 7],
-              Libur: selectedHolidayNames,
-              is_national_holiday: selectedIsNationalHoliday,
-              holiday_type: selectedHolidayTypes,
+              holidays: holidayNames,
             });
           }
         }
         index += 1;
       });
 
-    Object.keys(timeAndDateMap[monthName] || {}).forEach((key) => {
-      const tanggal = Number(key);
-      if (Number.isNaN(tanggal)) return;
-      const exists = dates.some((item) => item.tanggal === tanggal);
-      if (exists) return;
-
-      const external = timeAndDateMap[monthName][tanggal];
-      const externalHolidayTypes = categorizeHolidayList(external.holidays);
-      dates.push({
-        tanggal,
-        hari: external.day,
-        Libur: external.holidays,
-        is_national_holiday: externalHolidayTypes.some((type) => type !== "other"),
-        holiday_type: externalHolidayTypes,
-      });
-    });
-
     dates.sort((a, b) => a.tanggal - b.tanggal);
 
     if (dates.length > 0) {
       result.push({
-        bulan: monthName.toUpperCase(),
+        bulan: monthName.toLowerCase(),
         data: dates,
       });
     }

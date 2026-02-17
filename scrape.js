@@ -1,5 +1,6 @@
 const { parseTimeAndDate } = require("./timeanddate-parser");
 const { parseCalendar } = require("./tanggalan-parser");
+const { mergeHolidays } = require("./holiday-merger");
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -69,8 +70,12 @@ function scrape(options = {}) {
       return response.text();
     }),
   ]).then(([tanggalanHtml, timeAndDateHtml]) => {
-    const timeAndDateMap = parseTimeAndDate(timeAndDateHtml);
-    const data = parseCalendar(tanggalanHtml, timeAndDateMap);
+    // Each parser only parses its own source
+    const tanggalanData = parseCalendar(tanggalanHtml);
+    const timeAndDateData = parseTimeAndDate(timeAndDateHtml);
+
+    // Merge results from both sources
+    const data = mergeHolidays(tanggalanData, timeAndDateData);
 
     const result = buildResponse(data, {
       year,
@@ -83,4 +88,4 @@ function scrape(options = {}) {
   });
 }
 
-module.exports = { scrape, parseCalendar, parseTimeAndDate, CACHE_TTL_MS, CACHE_TTL_SECONDS };
+module.exports = { scrape, parseCalendar, parseTimeAndDate, mergeHolidays, CACHE_TTL_MS, CACHE_TTL_SECONDS };
