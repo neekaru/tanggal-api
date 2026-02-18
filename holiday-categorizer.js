@@ -1,44 +1,44 @@
 function categorizeHoliday(description) {
   const text = (description || "").toLowerCase();
-  const categories = new Set();
 
+  // Priority 1: Cuti Bersama
   if (text.includes("cuti")) {
-    categories.add("is_cuti");
+    return "is_cuti";
   }
 
+  // Priority 2: Major Muslim Holidays (Lebaran)
   if (["idul fitri", "lebaran", "idul adha", "idulfitri", "iduladha"].some((term) => text.includes(term))) {
-    categories.add("is_lebaran");
+    return "is_lebaran";
   }
 
+  // Priority 3: Other Muslim Holidays
   if (["isra", "muharram", "maulid", "hijriah"].some((term) => text.includes(term))) {
-    categories.add("is_holiday_muslim");
+    return "is_holiday_muslim";
   }
 
+  // Priority 4: Nationalism
   if (["kemerdekaan", "pancasila"].some((term) => text.includes(term))) {
-    categories.add("is_nationalism");
+    return "is_nationalism";
   }
 
+  // Priority 5: General Holidays
   if (
     ["natal", "yesus kristus", "waisak", "buruh", "imlek", "tahun baru", "nyepi", "jumat agung", "paskah"].some((term) =>
       text.includes(term)
     )
   ) {
-    categories.add("is_holiday");
+    return "is_holiday";
   }
 
-  if (categories.size === 0) {
-    return ["other"];
-  }
-
-  return Array.from(categories);
+  return "other";
 }
 
 function categorizeHolidayList(holidays) {
   const uniqueTypes = new Set();
 
   (holidays || []).forEach((name) => {
-    const cats = categorizeHoliday(name);
-    cats.forEach((c) => uniqueTypes.add(c));
+    const category = categorizeHoliday(name);
+    uniqueTypes.add(category);
   });
 
   return Array.from(uniqueTypes);
