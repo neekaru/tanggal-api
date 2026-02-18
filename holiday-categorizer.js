@@ -1,39 +1,47 @@
 function categorizeHoliday(description) {
   const text = (description || "").toLowerCase();
+  const categories = new Set();
 
-  if (["idul fitri", "lebaran", "idul adha"].some((term) => text.includes(term))) {
-    return "is_lebaran";
+  if (text.includes("cuti")) {
+    categories.add("is_cuti");
   }
-  if (["isra", "muharram", "maulid"].some((term) => text.includes(term))) {
-    return "is_holiday_muslim";
+
+  if (["idul fitri", "lebaran", "idul adha", "idulfitri", "iduladha"].some((term) => text.includes(term))) {
+    categories.add("is_lebaran");
   }
+
+  if (["isra", "muharram", "maulid", "hijriah"].some((term) => text.includes(term))) {
+    categories.add("is_holiday_muslim");
+  }
+
   if (["kemerdekaan", "pancasila"].some((term) => text.includes(term))) {
-    return "is_nationalism";
+    categories.add("is_nationalism");
   }
+
   if (
-    ["natal", "yesus kristus", "waisak", "buruh", "imlek", "tahun baru", "nyepi"].some((term) =>
+    ["natal", "yesus kristus", "waisak", "buruh", "imlek", "tahun baru", "nyepi", "jumat agung", "paskah"].some((term) =>
       text.includes(term)
     )
   ) {
-    return "is_holiday";
+    categories.add("is_holiday");
   }
-  if (text.includes("cuti")) {
-    return "is_cuti";
+
+  if (categories.size === 0) {
+    return ["other"];
   }
-  return "other";
+
+  return Array.from(categories);
 }
 
 function categorizeHolidayList(holidays) {
-  const uniqueTypes = [];
+  const uniqueTypes = new Set();
 
   (holidays || []).forEach((name) => {
-    const category = categorizeHoliday(name);
-    if (!uniqueTypes.includes(category)) {
-      uniqueTypes.push(category);
-    }
+    const cats = categorizeHoliday(name);
+    cats.forEach((c) => uniqueTypes.add(c));
   });
 
-  return uniqueTypes;
+  return Array.from(uniqueTypes);
 }
 
 const HOLIDAY_CATEGORIES = [
