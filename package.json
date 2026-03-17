@@ -1,6 +1,7 @@
 {
   "name": "tanggal-api-scraping",
   "private": true,
+  "packageManager": "npm@11.6.2",
   "scripts": {
     "start": "node index.js"
   },
