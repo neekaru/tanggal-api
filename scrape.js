@@ -1,3 +1,4 @@
+const { fetch } = require("wreq-js");
 const { parseTimeAndDate } = require("./timeanddate-parser");
 const { parseCalendar } = require("./tanggalan-parser");
 const { parseKalenderku } = require("./kalenderku-parser");
@@ -7,23 +8,16 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
 const scrapeCache = new Map();
 
-const FETCH_HEADERS = {
-  accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-  "accept-language": "en-US,en;q=0.9",
-  "cache-control": "max-age=0",
-  priority: "u=0, i",
-  referer: "https://www.google.com/",
-  "sec-ch-ua": '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
-  "sec-ch-ua-mobile": "?0",
-  "sec-ch-ua-platform": '"Windows"',
-  "sec-fetch-dest": "document",
-  "sec-fetch-mode": "navigate",
-  "sec-fetch-site": "same-origin",
-  "sec-fetch-user": "?1",
-  "upgrade-insecure-requests": "1",
-  "user-agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+const WREQ_OPTIONS = {
+  browser: "chrome_144",
+  os: "windows",
+  headers: {
+    accept:
+      "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "accept-language": "en-US,en;q=0.9",
+    "cache-control": "max-age=0",
+    referer: "https://www.google.com/",
+  },
 };
 
 function cloneResult(value) {
@@ -66,25 +60,36 @@ function buildResponse(data, metadata) {
   };
 }
 
-async function fetchHtml(label, url) {
+async function fetchHtml(label, url, retries = 3, delay = 2000) {
   console.log(`[scrape] Fetching ${label}: ${url}`);
 
-  try {
-    const response = await fetch(url, { headers: FETCH_HEADERS });
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url, WREQ_OPTIONS);
 
-    if (!response.ok) {
-      throw new Error(`${label} failed with status ${response.status}`);
+      if (!response.ok) {
+        if (response.status === 403 && attempt < retries) {
+          console.log(`[scrape] ${label} returned 403, retrying in ${delay}ms (attempt ${attempt}/${retries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        throw new Error(`${label} failed with status ${response.status}`);
+      }
+
+      console.log(`[scrape] ${label} responded with ${response.status}`);
+      return await response.text();
+    } catch (error) {
+      if (attempt === retries) {
+        const details = error.cause && error.cause.message
+          ? `${error.message} (${error.cause.message})`
+          : error.message;
+
+        console.error(`[scrape] ${label} fetch error: ${details}`);
+        throw new Error(`${label} fetch failed: ${details}`);
+      }
+      console.log(`[scrape] ${label} error, retrying in ${delay}ms (attempt ${attempt}/${retries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
-
-    console.log(`[scrape] ${label} responded with ${response.status}`);
-    return await response.text();
-  } catch (error) {
-    const details = error.cause && error.cause.message
-      ? `${error.message} (${error.cause.message})`
-      : error.message;
-
-    console.error(`[scrape] ${label} fetch error: ${details}`);
-    throw new Error(`${label} fetch failed: ${details}`);
   }
 }
 
@@ -109,24 +114,41 @@ function scrape(options = {}) {
 
   console.log("[scrape] Fetching source pages");
 
-  return Promise.all([
+  return Promise.allSettled([
     fetchHtml("Kalenderku", kalenderkuUrl),
     fetchHtml("Timeanddate", timeAndDateUrl),
     fetchHtml("Tanggalan", tanggalanUrl),
-  ]).then(([kalenderkuHtml, timeAndDateHtml, tanggalanHtml]) => {
-    console.log("[scrape] Parsing Kalenderku source");
-    const kalenderkuData = parseKalenderku(kalenderkuHtml);
-    console.log(`[scrape] Parsed ${Object.keys(kalenderkuData).length} holiday months from kalenderku`);
+  ]).then(([kalenderkuResult, timeAndDateResult, tanggalanResult]) => {
+    let kalenderkuData = {};
+    let timeAndDateData = {};
+    let tanggalanData = [];
 
-    console.log("[scrape] Parsing Timeanddate source");
-    const timeAndDateData = parseTimeAndDate(timeAndDateHtml);
-    console.log(
-      `[scrape] Parsed ${Object.keys(timeAndDateData).length} holiday months from timeanddate`
-    );
+    if (kalenderkuResult.status === "fulfilled") {
+      console.log("[scrape] Parsing Kalenderku source");
+      kalenderkuData = parseKalenderku(kalenderkuResult.value);
+      console.log(`[scrape] Parsed ${Object.keys(kalenderkuData).length} holiday months from kalenderku`);
+    } else {
+      console.warn("[scrape] Kalenderku fetch failed, continuing without it");
+    }
 
-    console.log("[scrape] Parsing Tanggalan source");
-    const tanggalanData = parseCalendar(tanggalanHtml);
-    console.log(`[scrape] Parsed ${tanggalanData.length} holiday months from tanggalan`);
+    if (timeAndDateResult.status === "fulfilled") {
+      console.log("[scrape] Parsing Timeanddate source");
+      timeAndDateData = parseTimeAndDate(timeAndDateResult.value);
+      console.log(
+        `[scrape] Parsed ${Object.keys(timeAndDateData).length} holiday months from timeanddate`
+      );
+    } else {
+      console.warn("[scrape] Timeanddate fetch failed, continuing without it");
+    }
+
+    if (tanggalanResult.status === "fulfilled") {
+      console.log("[scrape] Parsing Tanggalan source");
+      tanggalanData = parseCalendar(tanggalanResult.value);
+      console.log(`[scrape] Parsed ${tanggalanData.length} holiday months from tanggalan`);
+    } else {
+      console.error("[scrape] Tanggalan fetch failed - this is required");
+      throw new Error("Tanggalan fetch failed and it is required for scraping");
+    }
 
     console.log("[scrape] Merging holiday sources");
     const data = mergeHolidays(tanggalanData, timeAndDateData, kalenderkuData);
